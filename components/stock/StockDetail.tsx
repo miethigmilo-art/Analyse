@@ -19,7 +19,8 @@ interface AIAnalysis {
   rating: string; score: number; summary: string;
   opportunities: string[]; risks: string[];
   longTermOutlook: string; dailyRating: string;
-  priceTarget: number; sentiment: string;
+  priceTarget: number; priceTargetLow: number; priceTargetHigh: number;
+  sentiment: string;
   technicalScore: number; fundamentalScore: number;
   momentumScore: number; riskLevel: string;
 }
@@ -141,8 +142,4 @@ function LoadingSkeleton() {
       <div className="h-36 rounded-2xl bg-[#141c2e]" />
       <div className="grid grid-cols-3 gap-4">
         <div className="col-span-2 h-80 rounded-2xl bg-[#141c2e]" />
-        <div className="h-80 rounded-2xl bg-[#141c2e]" />
-      </div>
-    </div>
-  );
-}
+        <div className="h-80 rounded-2
