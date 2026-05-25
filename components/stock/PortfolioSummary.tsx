@@ -18,16 +18,16 @@ interface Portfolio {
 export default function PortfolioSummary() {
   const [data,    setData]    = useState<Portfolio | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(false);
+  const [errMsg,  setErrMsg]  = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/t212?type=portfolio')
       .then(r => r.json())
       .then(d => {
-        if (d.error) { setError(true); return; }
+        if (d.error) { setErrMsg(String(d.error)); return; }
         setData(d);
       })
-      .catch(() => setError(true))
+      .catch(e => setErrMsg(String(e)))
       .finally(() => setLoading(false));
   }, []);
 
@@ -35,13 +35,17 @@ export default function PortfolioSummary() {
     <div className="h-32 rounded-2xl bg-[#141c2e] animate-pulse" />
   );
 
-  if (error || !data) return (
-    <div className="p-5 rounded-2xl bg-[#141c2e] border border-[#1e2d4a] flex items-center gap-3">
-      <span className="text-xl">🔌</span>
-      <div>
+  if (errMsg || !data) return (
+    <div className="p-5 rounded-2xl bg-[#141c2e] border border-[#1e2d4a]">
+      <div className="flex items-center gap-3 mb-2">
+        <span className="text-xl">🔌</span>
         <div className="text-sm font-medium text-white">Trading 212 Not Connected</div>
-        <div className="text-xs text-[#94a3b8]">Add TRADING212_API_KEY to environment variables to sync your portfolio.</div>
       </div>
+      {errMsg && (
+        <div className="text-xs text-red-400 font-mono bg-red-900/20 rounded p-2 mt-1 break-all">
+          {errMsg}
+        </div>
+      )}
     </div>
   );
 
