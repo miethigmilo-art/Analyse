@@ -92,6 +92,29 @@ export default function PortfolioPage() {
     await loadPositions();
   }
 
+  async function handleT212Import() {
+    try {
+      const res = await fetch('/api/t212');
+      const d   = await res.json();
+      if (d.error) { alert('T212 Fehler: ' + d.error); return; }
+      const toImport = d.positions || [];
+      let count = 0;
+      for (const p of toImport) {
+        if (!p.ticker || !p.quantity || !p.avgPrice) continue;
+        const r = await fetch('/api/portfolio', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...p, name: p.ticker, type: 'stock' }),
+        });
+        if (r.ok) count++;
+      }
+      alert(count + ' Positionen aus Trading 212 importiert!');
+      loadData();
+    } catch (e) {
+      alert('Fehler: ' + String(e));
+    }
+  }
+
   function handleImport() {
     const input = document.createElement("input");
     input.type = "file";
@@ -156,6 +179,7 @@ export default function PortfolioPage() {
             onDelete={handleDelete}
             onAdd={() => setShowAdd(true)}
             onImport={handleImport}
+            onT212Import={handleT212Import}
           />
         </main>
       </div>

@@ -27,6 +27,7 @@ interface Props {
   onDelete?: (id: string) => void;
   onAdd?: () => void;
   onImport?: () => void;
+  onT212Import?: () => void;
 }
 
 type SortKey = "ticker" | "value" | "pnl" | "pnlPct" | "allocation";
@@ -53,7 +54,7 @@ const formatCurrency = (val: number, compact = false) => {
 };
 
 export default function PortfolioTable({
-  positions, quotes, totalValue, isDemo = false, onDelete, onAdd, onImport,
+  positions, quotes, totalValue, isDemo = false, onDelete, onAdd, onImport, onT212Import,
 }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("value");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -115,6 +116,15 @@ export default function PortfolioTable({
           <p style={{ color: "#8892b0", fontSize: "0.875rem" }}>{positions.length} positions tracked</p>
         </div>
         <div style={{ display: "flex", gap: "0.75rem" }}>
+          {onT212Import && (
+            <button onClick={onT212Import} style={{
+              padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer',
+              background: 'rgba(0,212,170,0.15)', color: '#00d4aa',
+              fontSize: '0.85rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.4rem',
+            }}>
+              📲 Trading 212 Import
+            </button>
+          )}
           {onImport && (
             <button onClick={onImport} style={{
               padding: "0.625rem 1.25rem", background: "rgba(255,255,255,0.06)",
