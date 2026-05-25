@@ -31,7 +31,7 @@ export default function StockDetail({ ticker }: { ticker: string }) {
   const [analysis,  setAnalysis]  = useState<AIAnalysis | null>(null);
   const [loading,   setLoading]   = useState(true);
   const [aiLoading, setAiLoading] = useState(false);
-  const [tab, setTab] = useState<'overview' | 'news' | 'insider' | 'portfolio'>('overview');
+  const [tab, setTab] = useState<'overview' | 'news' | 'insider'>('overview');
 
   useEffect(() => {
     setData(null); setAnalysis(null); setLoading(true);
@@ -55,13 +55,14 @@ export default function StockDetail({ ticker }: { ticker: string }) {
   }, [ticker]);
 
   if (loading) return <LoadingSkeleton />;
-  if (!data?.quote) return <div className="text-[#94a3b8] p-8 text-center">Stock not found</div>;
+  if (!data?.quote) return <div className="text-[#94a3b8] p-8 text-center">Aktie nicht gefunden</div>;
 
   const q  = data.quote as Record<string, number & string>;
   const up = (q.changePct as number) >= 0;
 
   return (
     <div className="space-y-4">
+      {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4 p-6 rounded-2xl bg-[#141c2e] border border-[#1e2d4a]">
         <div>
           <div className="flex items-center gap-3 mb-1">
@@ -75,16 +76,17 @@ export default function StockDetail({ ticker }: { ticker: string }) {
               {up ? '+' : ''}{(q.change as number).toFixed(2)} ({up ? '+' : ''}{(q.changePct as number).toFixed(2)}%)
             </span>
           </div>
-          <div className="text-xs text-[#475569] mt-1">Real-time via Finnhub</div>
+          <div className="text-xs text-[#475569] mt-1">via Yahoo Finance</div>
         </div>
+
         <div className="grid grid-cols-3 gap-4">
           {[
-            { label: 'Market Cap', value: (q.marketCap as number) > 1e9 ? `$${((q.marketCap as number)/1e9).toFixed(1)}B` : `$${((q.marketCap as number)/1e6).toFixed(0)}M` },
+            { label: 'Market Cap', value: (q.marketCap as number) > 1e9 ? `$${((q.marketCap as number) / 1e9).toFixed(1)}B` : `$${((q.marketCap as number) / 1e6).toFixed(0)}M` },
             { label: 'P/E Ratio',  value: q.pe ? (q.pe as number).toFixed(1) : 'N/A' },
-            { label: 'Volume',     value: (q.volume as number) > 1e6 ? `${((q.volume as number)/1e6).toFixed(1)}M` : (q.volume as number).toLocaleString() },
-            { label: '52W High',   value: `$${(q.week52High as number).toFixed(2)}` },
-            { label: '52W Low',    value: `$${(q.week52Low as number).toFixed(2)}` },
-            { label: 'Beta',       value: (q.beta as number).toFixed(2) },
+            { label: 'Volumen',    value: (q.volume as number) > 1e6 ? `${((q.volume as number) / 1e6).toFixed(1)}M` : (q.volume as number)?.toLocaleString() ?? 'N/A' },
+            { label: '52W High',   value: `$${(q.week52High as number)?.toFixed(2) ?? 'N/A'}` },
+            { label: '52W Low',    value: `$${(q.week52Low as number)?.toFixed(2) ?? 'N/A'}` },
+            { label: 'Beta',       value: (q.beta as number)?.toFixed(2) ?? 'N/A' },
           ].map(m => (
             <div key={m.label}>
               <div className="text-xs text-[#475569]">{m.label}</div>
@@ -94,6 +96,7 @@ export default function StockDetail({ ticker }: { ticker: string }) {
         </div>
       </div>
 
+      {/* Chart + AI Rating */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
           <PriceChart ticker={ticker} history={data.history} currentPrice={q.price as number} />
@@ -103,8 +106,9 @@ export default function StockDetail({ ticker }: { ticker: string }) {
         </div>
       </div>
 
+      {/* Tabs */}
       <div className="flex gap-2 border-b border-[#1e2d4a]">
-        {(['overview', 'news', 'insider', 'portfolio'] as const).map(t => (
+        {(['overview', 'news', 'insider'] as const).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -112,19 +116,16 @@ export default function StockDetail({ ticker }: { ticker: string }) {
               tab === t ? 'text-blue-400 border-b-2 border-blue-400' : 'text-[#94a3b8] hover:text-white'
             }`}
           >
-            {t}
+            {t === 'overview' ? 'Übersicht' : t === 'news' ? 'News' : 'Insider'}
           </button>
         ))}
       </div>
 
-      {tab === 'overview' && <AnalysisTable quote={data.quote} analyst={data.analyst} analysis={analysis} />}
-      {tab === 'news'    && <NewsPanel news={data.news} />}
-      {tab === 'insider' && <InsiderPanel trades={data.insider} />}
-      {tab === 'portfolio' && (
-        <div className="text-[#94a3b8] text-center py-12">
-          Connect your Trading 212 account to view portfolio data.
-        </div>
+      {tab === 'overview' && (
+        <AnalysisTable quote={data.quote} analyst={data.analyst} analysis={analysis} />
       )}
+      {tab === 'news'     && <NewsPanel news={data.news} />}
+      {tab === 'insider'  && <InsiderPanel trades={data.insider} />}
     </div>
   );
 }

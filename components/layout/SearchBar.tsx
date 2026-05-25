@@ -1,10 +1,16 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 interface SearchResult { ticker: string; name: string; type: string; }
 
-export default function SearchBar({ onSelect }: { onSelect: (ticker: string) => void }) {
+export default function SearchBar({
+  onSelect,
+  large = false,
+}: {
+  onSelect: (ticker: string) => void;
+  large?: boolean;
+}) {
   const [query,   setQuery]   = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [open,    setOpen]    = useState(false);
@@ -24,7 +30,7 @@ export default function SearchBar({ onSelect }: { onSelect: (ticker: string) => 
     const t = setTimeout(async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const res  = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
         const data = await res.json();
         setResults(data);
         setOpen(data.length > 0);
@@ -39,19 +45,27 @@ export default function SearchBar({ onSelect }: { onSelect: (ticker: string) => 
     setOpen(false);
   }
 
+  const inputCls = large
+    ? 'w-full bg-[#141c2e] border border-[#1e2d4a] rounded-xl pl-11 pr-4 py-4 text-base text-white placeholder-[#475569] focus:outline-none focus:border-blue-500 transition-colors shadow-lg'
+    : 'w-full bg-[#141c2e] border border-[#1e2d4a] rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-blue-500 transition-colors';
+
+  const iconCls = large
+    ? 'absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8]'
+    : 'absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8] text-sm';
+
   return (
     <div ref={ref} className="relative w-full">
       <div className="relative">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8] text-sm">🔍</span>
+        <span className={iconCls}>🔍</span>
         <input
           value={query}
           onChange={e => setQuery(e.target.value)}
           onFocus={() => results.length > 0 && setOpen(true)}
-          placeholder="Search stocks... (AAPL, Tesla, Nvidia)"
-          className="w-full bg-[#141c2e] border border-[#1e2d4a] rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-blue-500 transition-colors"
+          placeholder={large ? 'Aktie suchen... z.B. AAPL, Tesla, Nvidia' : 'Suchen... (AAPL, Tesla)'}
+          className={inputCls}
         />
         {loading && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] text-xs">...</span>
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#94a3b8] text-xs">...</span>
         )}
       </div>
       {open && results.length > 0 && (

@@ -1,108 +1,83 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import SearchBar from '@/components/layout/SearchBar';
-import Sidebar from '@/components/layout/Sidebar';
-import StockCard from '@/components/stock/StockCard';
 import MarketTicker from '@/components/layout/MarketTicker';
-import RecommendedStocks from '@/components/stock/RecommendedStocks';
-import PortfolioSummary from '@/components/stock/PortfolioSummary';
-
-interface QuoteData {
-  ticker: string; name: string; price: number;
-  changePct: number; change: number; marketCap: number;
-  volume: number; pe: number; sector: string; logoUrl: string;
-}
-
-export default function Dashboard() {
-  const [selectedTicker, setSelectedTicker]   = useState<string | null>(null);
-  const [featuredStocks, setFeaturedStocks]   = useState<QuoteData[]>([]);
-  const [loading, setLoading]                 = useState(true);
-
-  useEffect(() => {
-    async function loadFeatured() {
-      try {
-        const tickers = ['NVDA', 'AAPL', 'MSFT', 'TSLA', 'META', 'AMZN'];
-        const quotes  = await Promise.allSettled(
-          tickers.map(t => fetch(`/api/stocks?ticker=${t}`).then(r => r.json()).then(d => d.quote))
-        );
-        setFeaturedStocks(
-          quotes.filter(q => q.status === 'fulfilled' && q.value?.price)
-                .map(q => (q as PromiseFulfilledResult<QuoteData>).value)
-        );
-      } finally { setLoading(false); }
-    }
-    loadFeatured();
-  }, []);
-
-  return (
-    <div className="flex h-screen bg-[#0a0e1a] overflow-hidden">
-      <Sidebar onSelect={setSelectedTicker} selected={selectedTicker} />
-
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top bar */}
-        <header className="flex items-center gap-4 px-6 py-3 border-b border-[#1e2d4a] bg-[#0f1629]">
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-              ⬡ HELIX STOCKS
-            </span>
-            <span className="text-xs text-[#94a3b8] border border-[#1e2d4a] rounded px-1.5 py-0.5">AI</span>
-          </div>
-          <div className="flex-1 max-w-xl">
-            <SearchBar onSelect={setSelectedTicker} />
-          </div>
-          <MarketTicker />
-        </header>
-
-        {/* Main content */}
-        <main className="flex-1 overflow-y-auto p-6 space-y-6">
-          {selectedTicker ? (
-            <StockAnalysisView ticker={selectedTicker} onBack={() => setSelectedTicker(null)} />
-          ) : (
-            <>
-              {/* Featured stocks grid */}
-              <div>
-                <h2 className="text-sm font-medium text-[#94a3b8] uppercase tracking-wider mb-3">
-                  Market Overview
-                </h2>
-                {loading ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {[...Array(6)].map((_, i) => (
-                      <div key={i} className="h-28 rounded-xl bg-[#141c2e] animate-pulse" />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {featuredStocks.map(q => (
-                      <StockCard key={q.ticker} quote={q} onClick={() => setSelectedTicker(q.ticker)} />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <PortfolioSummary />
-              <RecommendedStocks onSelect={setSelectedTicker} />
-            </>
-          )}
-        </main>
-      </div>
-    </div>
-  );
-}
-
-// ── Full analysis view ────────────────────────────────────────
 import StockDetail from '@/components/stock/StockDetail';
 
-function StockAnalysisView({ ticker, onBack }: { ticker: string; onBack: () => void }) {
+const QUICK_PICKS = ['AAPL', 'NVDA', 'MSFT', 'TSLA', 'META', 'AMZN', 'GOOGL', 'AMD'];
+
+export default function Dashboard() {
+  const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
+
   return (
-    <div className="slide-in">
-      <button
-        onClick={onBack}
-        className="flex items-center gap-2 text-sm text-[#94a3b8] hover:text-white mb-4 transition-colors"
-      >
-        ← Back to Dashboard
-      </button>
-      <StockDetail ticker={ticker} />
+    <div className="min-h-screen bg-[#0a0e1a] flex flex-col">
+      {/* Header */}
+      <header className="flex items-center gap-4 px-6 py-3 border-b border-[#1e2d4a] bg-[#0f1629] sticky top-0 z-10">
+        <button
+          onClick={() => setSelectedTicker(null)}
+          className="flex items-center gap-2 flex-shrink-0 hover:opacity-80 transition-opacity"
+        >
+          <span className="text-lg font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+            ⬡ HELIX STOCKS
+          </span>
+          <span className="text-xs text-[#94a3b8] border border-[#1e2d4a] rounded px-1.5 py-0.5">AI</span>
+        </button>
+        <div className="flex-1 max-w-xl">
+          <SearchBar onSelect={setSelectedTicker} />
+        </div>
+        <div className="hidden md:block">
+          <MarketTicker />
+        </div>
+      </header>
+
+      {/* Main */}
+      <main className="flex-1 p-6 max-w-6xl mx-auto w-full">
+        {selectedTicker ? (
+          <div className="slide-in">
+            <button
+              onClick={() => setSelectedTicker(null)}
+              className="flex items-center gap-2 text-sm text-[#94a3b8] hover:text-white mb-4 transition-colors"
+            >
+              ← Zurück
+            </button>
+            <StockDetail ticker={selectedTicker} />
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8">
+            {/* Hero */}
+            <div className="text-center space-y-3">
+              <h1 className="text-4xl font-bold text-white">
+                Aktienanalyse{' '}
+                <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                  mit KI
+                </span>
+              </h1>
+              <p className="text-[#94a3b8] text-lg">
+                Einfach eine Aktie suchen und die vollständige Analyse erhalten.
+              </p>
+            </div>
+
+            {/* Big search */}
+            <div className="w-full max-w-lg">
+              <SearchBar onSelect={setSelectedTicker} large />
+            </div>
+
+            {/* Quick picks */}
+            <div className="flex flex-wrap justify-center gap-2">
+              {QUICK_PICKS.map(t => (
+                <button
+                  key={t}
+                  onClick={() => setSelectedTicker(t)}
+                  className="px-4 py-1.5 rounded-full bg-[#141c2e] border border-[#1e2d4a] text-sm font-mono text-[#94a3b8] hover:text-white hover:border-blue-500/50 hover:bg-[#1a2340] transition-all"
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </main>
     </div>
   );
 }
