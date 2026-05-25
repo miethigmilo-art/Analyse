@@ -70,7 +70,7 @@ export default function RecommendedStocks({ onSelect }: { onSelect: (t: string) 
         <div className="text-center text-[#475569] py-10 text-sm">Keine Daten verfügbar</div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {current.slice(0, 8).map(q => (
+          {current.slice(0, 10).map(q => (
             <StockCard key={q.ticker} quote={q} onClick={() => onSelect(q.ticker)} />
           ))}
         </div>
