@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
   env: {
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
   },
+  serverExternalPackages: ['openai', 'ioredis', 'bcryptjs', '@prisma/client'],
 };
 
 export default nextConfig;

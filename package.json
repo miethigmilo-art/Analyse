@@ -37,7 +37,9 @@
     "recharts": "^2.15.0",
     "tailwind-merge": "^2.6.0",
     "zod": "^3.24.1",
-    "zustand": "^5.0.3"
+    "zustand": "^5.0.3",
+    "fast-equals": "^5.0.1",
+    "d3-array": "^3.2.4"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
