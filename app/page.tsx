@@ -48,6 +48,13 @@ export default function Dashboard() {
         <div className="hidden md:block">
           <MarketTicker />
         </div>
+        <button
+          onClick={async () => { await fetch('/api/auth/logout', { method: 'POST' }); window.location.href = '/login'; }}
+          className="text-xs text-[#475569] hover:text-red-400 transition-colors flex-shrink-0"
+          title="Ausloggen"
+        >
+          🔒
+        </button>
       </header>
 
       {/* Main */}

@@ -1,42 +1,34 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
 
-const T212_BASE = process.env.TRADING212_MODE === 'demo'
+const BASE = process.env.TRADING212_MODE === 'demo'
   ? 'https://demo.trading212.com/api/v0'
   : 'https://live.trading212.com/api/v0';
 
 export async function GET() {
-  const key = (process.env.TRADING212_API_KEY || '').trim();
-  const results: Record<string, unknown> = {
-    keyPresent: !!key,
-    keyLength: key.length,
-    keyPrefix: key ? key.slice(0, 8) + '...' : null,
-    mode: process.env.TRADING212_MODE || 'live',
-    base: T212_BASE,
+  const secret = (process.env.TRADING212_SECRET || '').trim();
+  const result: Record<string, unknown> = {
+    secretPresent: !!secret,
+    secretLength:  secret.length,
+    secretPrefix:  secret ? secret.slice(0, 6) + '...' : null,
+    mode:          process.env.TRADING212_MODE || 'live',
+    base:          BASE,
   };
 
-  for (const endpoint of ['/equity/portfolio', '/equity/account/cash', '/equity/account/info']) {
+  for (const ep of ['/equity/portfolio', '/equity/account/cash', '/equity/account/info']) {
     try {
-      const res = await axios.get(`${T212_BASE}${endpoint}`, {
-        headers: { Authorization: key },
-        timeout: 8000,
+      const r = await axios.get(`${BASE}${ep}`, {
+        headers: { Authorization: secret },
+        timeout: 10000,
       });
-      results[endpoint] = { status: res.status, data: res.data };
+      result[ep] = { status: r.status, data: r.data };
     } catch (e: unknown) {
       if (axios.isAxiosError(e)) {
-        results[endpoint] = {
-          error: true,
-          status: e.response?.status,
-          data: e.response?.data,
-          message: e.message,
-        };
+        result[ep] = { error: true, status: e.response?.status, body: e.response?.data, msg: e.message };
       } else {
-        results[endpoint] = { error: true, message: String(e) };
+        result[ep] = { error: true, msg: String(e) };
       }
     }
   }
-
-  return NextResponse.json(results, {
-    headers: { 'Cache-Control': 'no-store' },
-  });
+  return NextResponse.json(result, { headers: { 'Cache-Control': 'no-store' } });
 }
