@@ -1,34 +1,32 @@
-import { NextResponse } from 'next/server';
-import axios from 'axios';
+import { NextResponse } from "next/server";
+import axios from "axios";
 
-const BASE = process.env.TRADING212_MODE === 'demo'
-  ? 'https://demo.trading212.com/api/v0'
-  : 'https://live.trading212.com/api/v0';
+const BASE = "https://live.trading212.com/api/v0";
+const EP   = "/equity/account/info";
+
+async function tryAuth(label: string, headers: Record<string, string>) {
+  try {
+    const r = await axios.get(BASE + EP, { headers, timeout: 8000 });
+    return { label, ok: true, status: r.status, data: r.data };
+  } catch (e: unknown) {
+    if (axios.isAxiosError(e)) return { label, ok: false, status: e.response?.status, body: e.response?.data };
+    return { label, ok: false, msg: String(e) };
+  }
+}
 
 export async function GET() {
-  const secret = (process.env.TRADING212_SECRET || '').trim();
-  const result: Record<string, unknown> = {
-    secretPresent: !!secret,
-    secretLength:  secret.length,
-    secretPrefix:  secret ? secret.slice(0, 6) + '...' : null,
-    mode:          process.env.TRADING212_MODE || 'live',
-    base:          BASE,
-  };
+  const id     = (process.env.TRADING212_CLIENT_ID || "").trim();
+  const secret = (process.env.TRADING212_SECRET    || "").trim();
+  const combined = Buffer.from(id + ":" + secret).toString("base64");
 
-  for (const ep of ['/equity/portfolio', '/equity/account/cash', '/equity/account/info']) {
-    try {
-      const r = await axios.get(`${BASE}${ep}`, {
-        headers: { Authorization: secret },
-        timeout: 10000,
-      });
-      result[ep] = { status: r.status, data: r.data };
-    } catch (e: unknown) {
-      if (axios.isAxiosError(e)) {
-        result[ep] = { error: true, status: e.response?.status, body: e.response?.data, msg: e.message };
-      } else {
-        result[ep] = { error: true, msg: String(e) };
-      }
-    }
-  }
-  return NextResponse.json(result, { headers: { 'Cache-Control': 'no-store' } });
+  const results = await Promise.all([
+    tryAuth("secret_only",          { Authorization: secret }),
+    tryAuth("id_only",              { Authorization: id }),
+    tryAuth("bearer_secret",        { Authorization: "Bearer " + secret }),
+    tryAuth("basic_id_secret",      { Authorization: "Basic " + combined }),
+    tryAuth("id_header_secret_auth", { Authorization: secret, "X-Api-Key": id }),
+    tryAuth("secret_header_id_auth", { Authorization: id,     "X-Api-Key": secret }),
+  ]);
+
+  return NextResponse.json({ id_prefix: id.slice(0,8), secret_prefix: secret.slice(0,6), results });
 }
