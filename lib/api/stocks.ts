@@ -81,6 +81,34 @@ export async function getStockQuote(ticker: string): Promise<StockQuote> {
   const cached = await cacheGet<StockQuote>(cacheKey);
   if (cached) return cached;
 
+  // Try Yahoo Finance first (no key needed)
+  let yahooData: Record<string, number | string> = {};
+  try {
+    const yRes = await axios.get(
+      `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=5d`,
+      { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 8000 }
+    );
+    const r = yRes.data?.chart?.result?.[0];
+    const meta = r?.meta || {};
+    if (meta.regularMarketPrice > 0) {
+      yahooData = {
+        price:     meta.regularMarketPrice || 0,
+        open:      meta.regularMarketOpen || 0,
+        high:      meta.regularMarketDayHigh || 0,
+        low:       meta.regularMarketDayLow || 0,
+        volume:    meta.regularMarketVolume || 0,
+        change:    meta.regularMarketChange || 0,
+        changePct: meta.regularMarketChangePercent || 0,
+        week52High: meta.fiftyTwoWeekHigh || 0,
+        week52Low:  meta.fiftyTwoWeekLow  || 0,
+        marketCap: meta.marketCap || 0,
+        name:      meta.longName || meta.shortName || ticker,
+        sector:    meta.exchangeName || 'Unknown',
+      };
+    }
+  } catch { /* fall through */ }
+
+  // Try Finnhub for additional data
   const [quoteRes, profileRes, metricsRes] = await Promise.allSettled([
     axios.get(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${FINNHUB_KEY}`),
     axios.get(`https://finnhub.io/api/v1/stock/profile2?symbol=${ticker}&token=${FINNHUB_KEY}`),
@@ -91,31 +119,36 @@ export async function getStockQuote(ticker: string): Promise<StockQuote> {
   const p = profileRes.status === 'fulfilled' ? profileRes.value.data : {};
   const m = metricsRes.status === 'fulfilled' ? metricsRes.value.data?.metric || {} : {};
 
+  // Merge: prefer Yahoo for price, Finnhub for fundamentals/profile
+  const price     = (q.c > 0 ? q.c : yahooData.price)     || 0;
+  const change    = (q.d !== 0 ? q.d : yahooData.change)   || 0;
+  const changePct = (q.dp !== 0 ? q.dp : yahooData.changePct) || 0;
+
   const result: StockQuote = {
     ticker:        ticker.toUpperCase(),
-    name:          p.name           || ticker,
-    price:         q.c              || 0,
-    change:        q.d              || 0,
-    changePct:     q.dp             || 0,
-    open:          q.o              || 0,
-    high:          q.h              || 0,
-    low:           q.l              || 0,
-    volume:        q.v              || 0,
-    marketCap:     p.marketCapitalization ? p.marketCapitalization * 1e6 : 0,
+    name:          p.name || yahooData.name as string || ticker,
+    price:         price as number,
+    change:        change as number,
+    changePct:     changePct as number,
+    open:          q.o || yahooData.open  as number || 0,
+    high:          q.h || yahooData.high  as number || 0,
+    low:           q.l || yahooData.low   as number || 0,
+    volume:        q.v || yahooData.volume as number || 0,
+    marketCap:     p.marketCapitalization ? p.marketCapitalization * 1e6 : (yahooData.marketCap as number || 0),
     pe:            m['peBasicExclExtraTTM'] || 0,
     eps:           m['epsBasicExclExtraAnnual'] || 0,
-    week52High:    m['52WeekHigh']  || 0,
-    week52Low:     m['52WeekLow']   || 0,
+    week52High:    m['52WeekHigh'] || yahooData.week52High as number || 0,
+    week52Low:     m['52WeekLow']  || yahooData.week52Low  as number || 0,
     avgVolume:     m['10DayAverageTradingVolume'] ? m['10DayAverageTradingVolume'] * 1e6 : 0,
-    beta:          m['beta']        || 0,
+    beta:          m['beta'] || 0,
     dividendYield: m['dividendYieldIndicatedAnnual'] || 0,
-    sector:        p.finnhubIndustry || 'Unknown',
-    industry:      p.finnhubIndustry || 'Unknown',
-    description:   p.description    || '',
-    logoUrl:       p.logo           || `https://logo.clearbit.com/${p.weburl}`,
+    sector:        p.finnhubIndustry || 'Equity',
+    industry:      p.finnhubIndustry || 'Equity',
+    description:   p.description || '',
+    logoUrl:       p.logo || `https://logo.clearbit.com/${p.weburl}`,
   };
 
-  await cacheSet(cacheKey, result, 60);
+  if (result.price > 0) await cacheSet(cacheKey, result, 60);
   return result;
 }
 
