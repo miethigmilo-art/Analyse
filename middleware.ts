@@ -11,8 +11,9 @@ export function middleware(req: NextRequest) {
     pathname.startsWith('/favicon')
   ) return NextResponse.next();
 
+  const pw    = process.env.APP_PASSWORD || 'helix2025';
   const token = req.cookies.get('helix_auth')?.value;
-  if (token === process.env.APP_PASSWORD) return NextResponse.next();
+  if (token === pw) return NextResponse.next();
 
   const url = req.nextUrl.clone();
   url.pathname = '/login';
