@@ -31,6 +31,12 @@ export interface StockQuote {
   industry:      string;
   description:   string;
   logoUrl:       string;
+  analystRating: string;
+  priceTarget:   number;
+  revenue:       number;
+  netIncome:     number;
+  debtToEquity:  number;
+  roe:           number;
 }
 
 export interface HistoricalBar {
@@ -146,6 +152,12 @@ export async function getStockQuote(ticker: string): Promise<StockQuote> {
     industry:      p.finnhubIndustry || 'Equity',
     description:   p.description || '',
     logoUrl:       p.logo || `https://logo.clearbit.com/${p.weburl}`,
+    analystRating: '',
+    priceTarget:   0,
+    revenue:       0,
+    netIncome:     0,
+    debtToEquity:  0,
+    roe:           0,
   };
 
   if (result.price > 0) await cacheSet(cacheKey, result, 60);
