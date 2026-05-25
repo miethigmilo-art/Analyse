@@ -312,6 +312,60 @@ export async function searchStocks(query: string): Promise<Array<{ ticker: strin
 }
 
 // ── Trending / Recommendations ────────────────────────────────
+
+// ── Batch quote fetch (Yahoo Finance v7) ─────────────────────
+// Fetches up to ~400 tickers in one HTTP call
+export async function batchGetQuotes(tickers: string[]): Promise<StockQuote[]> {
+  const CHUNK = 400;
+  const results: StockQuote[] = [];
+
+  for (let i = 0; i < tickers.length; i += CHUNK) {
+    const chunk   = tickers.slice(i, i + CHUNK);
+    const symbols = chunk.join(',');
+    try {
+      const res = await axios.get(
+        `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols)}&fields=symbol,shortName,regularMarketPrice,regularMarketChange,regularMarketChangePercent,regularMarketVolume,marketCap,trailingPE,fiftyTwoWeekHigh,fiftyTwoWeekLow,averageDailyVolume3Month,beta`,
+        { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 15000 }
+      );
+      const quotes = res.data?.quoteResponse?.result ?? [];
+      for (const q of quotes) {
+        if (!q.regularMarketPrice) continue;
+        results.push({
+          ticker:        q.symbol,
+          name:          q.shortName || q.symbol,
+          price:         q.regularMarketPrice      || 0,
+          change:        q.regularMarketChange     || 0,
+          changePct:     q.regularMarketChangePercent || 0,
+          open:          q.regularMarketOpen       || 0,
+          high:          q.regularMarketDayHigh    || 0,
+          low:           q.regularMarketDayLow     || 0,
+          volume:        q.regularMarketVolume     || 0,
+          marketCap:     q.marketCap               || 0,
+          pe:            q.trailingPE              || 0,
+          eps:           0,
+          week52High:    q.fiftyTwoWeekHigh        || 0,
+          week52Low:     q.fiftyTwoWeekLow         || 0,
+          avgVolume:     q.averageDailyVolume3Month || 0,
+          beta:          q.beta                    || 0,
+          dividendYield: q.trailingAnnualDividendYield || 0,
+          sector:        q.sector                  || '',
+          industry:      q.industry                || '',
+          logoUrl:       '',
+          analystRating: '',
+          priceTarget:   0,
+          revenue:       0,
+          netIncome:     0,
+          debtToEquity:  0,
+          roe:           0,
+        });
+      }
+    } catch (e) {
+      console.error('Batch quote chunk failed:', e);
+    }
+  }
+  return results;
+}
+
 export const CURATED_STOCKS = {
   trending:    ['NVDA', 'TSLA', 'AAPL', 'MSFT', 'META', 'AMZN', 'GOOGL', 'AMD'],
   undervalued: ['BRK-B', 'JPM', 'BAC', 'WFC', 'C', 'GS', 'V', 'MA'],
