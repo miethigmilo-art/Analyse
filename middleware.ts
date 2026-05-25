@@ -6,7 +6,7 @@ export function middleware(req: NextRequest) {
   // Public paths — always accessible
   if (
     pathname.startsWith('/login') ||
-    pathname.startsWith('/api/auth') ||
+    pathname.startsWith('/api/') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon')
   ) return NextResponse.next();
