@@ -336,7 +336,7 @@ export async function batchGetQuotes(tickers: string[]): Promise<StockQuote[]> {
     const symbols = chunk.join(',');
     try {
       const res = await axios.get(
-        `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols)}&fields=symbol,shortName,regularMarketPrice,regularMarketChange,regularMarketChangePercent,regularMarketVolume,marketCap,trailingPE,fiftyTwoWeekHigh,fiftyTwoWeekLow,averageDailyVolume3Month,beta`,
+        `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols}&fields=symbol,shortName,regularMarketPrice,regularMarketChange,regularMarketChangePercent,regularMarketVolume,marketCap,trailingPE,fiftyTwoWeekHigh,fiftyTwoWeekLow,averageDailyVolume3Month,beta`,
         { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 15000 }
       );
       const quotes = res.data?.quoteResponse?.result ?? [];
