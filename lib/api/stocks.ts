@@ -362,6 +362,7 @@ export async function batchGetQuotes(tickers: string[]): Promise<StockQuote[]> {
           dividendYield: q.trailingAnnualDividendYield || 0,
           sector:        q.sector                  || '',
           industry:      q.industry                || '',
+          description:   '',
           logoUrl:       '',
           analystRating: '',
           priceTarget:   0,
