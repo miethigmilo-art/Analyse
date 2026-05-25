@@ -125,6 +125,34 @@ export async function getHistoricalData(ticker: string, from: number, to: number
   const cached = await cacheGet<HistoricalBar[]>(cacheKey);
   if (cached) return cached;
 
+  // Try Yahoo Finance first (no key needed, reliable free data)
+  try {
+    const range      = Math.round((to - from) / 86400) > 180 ? '1y' : '6mo';
+    const yahooRes   = await axios.get(
+      `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=${range}`,
+      { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 8000 }
+    );
+    const result = yahooRes.data?.chart?.result?.[0];
+    if (result?.timestamp?.length > 0) {
+      const ts    = result.timestamp as number[];
+      const q     = result.indicators?.quote?.[0] || {};
+      const bars: HistoricalBar[] = ts.map((t: number, i: number) => ({
+        time:   t,
+        open:   q.open?.[i]   || 0,
+        high:   q.high?.[i]   || 0,
+        low:    q.low?.[i]    || 0,
+        close:  q.close?.[i]  || 0,
+        volume: q.volume?.[i] || 0,
+      })).filter(b => b.close > 0);
+
+      if (bars.length > 10) {
+        await cacheSet(cacheKey, bars, 3600);
+        return bars;
+      }
+    }
+  } catch { /* fall through to Finnhub */ }
+
+  // Fallback: Finnhub candles
   try {
     const res = await axios.get(
       `https://finnhub.io/api/v1/stock/candle?symbol=${ticker}&resolution=${resolution}&from=${from}&to=${to}&token=${FINNHUB_KEY}`
