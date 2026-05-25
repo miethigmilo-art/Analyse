@@ -4,6 +4,7 @@ import { useState } from 'react';
 import SearchBar from '@/components/layout/SearchBar';
 import MarketTicker from '@/components/layout/MarketTicker';
 import StockDetail from '@/components/stock/StockDetail';
+import RecommendedStocks from '@/components/stock/RecommendedStocks';
 
 const QUICK_PICKS = ['AAPL', 'NVDA', 'MSFT', 'TSLA', 'META', 'AMZN', 'GOOGL', 'AMD'];
 
@@ -44,37 +45,41 @@ export default function Dashboard() {
             <StockDetail ticker={selectedTicker} />
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8">
-            {/* Hero */}
-            <div className="text-center space-y-3">
-              <h1 className="text-4xl font-bold text-white">
-                Aktienanalyse{' '}
-                <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                  mit KI
-                </span>
-              </h1>
-              <p className="text-[#94a3b8] text-lg">
-                Einfach eine Aktie suchen und die vollständige Analyse erhalten.
-              </p>
+          <div className="space-y-10">
+            {/* Hero search */}
+            <div className="flex flex-col items-center gap-6 pt-8">
+              <div className="text-center space-y-2">
+                <h1 className="text-4xl font-bold text-white">
+                  Aktienanalyse{' '}
+                  <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                    mit KI
+                  </span>
+                </h1>
+                <p className="text-[#94a3b8] text-base">
+                  Aktie suchen und die vollständige Analyse erhalten.
+                </p>
+              </div>
+
+              <div className="w-full max-w-lg">
+                <SearchBar onSelect={setSelectedTicker} large />
+              </div>
+
+              {/* Quick picks */}
+              <div className="flex flex-wrap justify-center gap-2">
+                {QUICK_PICKS.map(t => (
+                  <button
+                    key={t}
+                    onClick={() => setSelectedTicker(t)}
+                    className="px-4 py-1.5 rounded-full bg-[#141c2e] border border-[#1e2d4a] text-sm font-mono text-[#94a3b8] hover:text-white hover:border-blue-500/50 hover:bg-[#1a2340] transition-all"
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Big search */}
-            <div className="w-full max-w-lg">
-              <SearchBar onSelect={setSelectedTicker} large />
-            </div>
-
-            {/* Quick picks */}
-            <div className="flex flex-wrap justify-center gap-2">
-              {QUICK_PICKS.map(t => (
-                <button
-                  key={t}
-                  onClick={() => setSelectedTicker(t)}
-                  className="px-4 py-1.5 rounded-full bg-[#141c2e] border border-[#1e2d4a] text-sm font-mono text-[#94a3b8] hover:text-white hover:border-blue-500/50 hover:bg-[#1a2340] transition-all"
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
+            {/* Best picks list */}
+            <RecommendedStocks onSelect={setSelectedTicker} />
           </div>
         )}
       </main>
