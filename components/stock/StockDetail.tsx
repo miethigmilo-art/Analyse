@@ -62,7 +62,6 @@ export default function StockDetail({ ticker }: { ticker: string }) {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4 p-6 rounded-2xl bg-[#141c2e] border border-[#1e2d4a]">
         <div>
           <div className="flex items-center gap-3 mb-1">
@@ -78,12 +77,11 @@ export default function StockDetail({ ticker }: { ticker: string }) {
           </div>
           <div className="text-xs text-[#475569] mt-1">Real-time via Finnhub</div>
         </div>
-
         <div className="grid grid-cols-3 gap-4">
           {[
-            { label: 'Market Cap', value: (q.marketCap as number) > 1e9 ? `$${((q.marketCap as number) / 1e9).toFixed(1)}B` : `$${((q.marketCap as number) / 1e6).toFixed(0)}M` },
+            { label: 'Market Cap', value: (q.marketCap as number) > 1e9 ? `$${((q.marketCap as number)/1e9).toFixed(1)}B` : `$${((q.marketCap as number)/1e6).toFixed(0)}M` },
             { label: 'P/E Ratio',  value: q.pe ? (q.pe as number).toFixed(1) : 'N/A' },
-            { label: 'Volume',     value: (q.volume as number) > 1e6 ? `${((q.volume as number) / 1e6).toFixed(1)}M` : (q.volume as number).toLocaleString() },
+            { label: 'Volume',     value: (q.volume as number) > 1e6 ? `${((q.volume as number)/1e6).toFixed(1)}M` : (q.volume as number).toLocaleString() },
             { label: '52W High',   value: `$${(q.week52High as number).toFixed(2)}` },
             { label: '52W Low',    value: `$${(q.week52Low as number).toFixed(2)}` },
             { label: 'Beta',       value: (q.beta as number).toFixed(2) },
@@ -96,7 +94,6 @@ export default function StockDetail({ ticker }: { ticker: string }) {
         </div>
       </div>
 
-      {/* Chart + AI Rating */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
           <PriceChart ticker={ticker} history={data.history} currentPrice={q.price as number} />
@@ -106,7 +103,6 @@ export default function StockDetail({ ticker }: { ticker: string }) {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-2 border-b border-[#1e2d4a]">
         {(['overview', 'news', 'insider', 'portfolio'] as const).map(t => (
           <button
@@ -121,9 +117,7 @@ export default function StockDetail({ ticker }: { ticker: string }) {
         ))}
       </div>
 
-      {tab === 'overview' && (
-        <AnalysisTable quote={data.quote} analyst={data.analyst} analysis={analysis} />
-      )}
+      {tab === 'overview' && <AnalysisTable quote={data.quote} analyst={data.analyst} analysis={analysis} />}
       {tab === 'news'    && <NewsPanel news={data.news} />}
       {tab === 'insider' && <InsiderPanel trades={data.insider} />}
       {tab === 'portfolio' && (
@@ -143,3 +137,6 @@ function LoadingSkeleton() {
         <div className="col-span-2 h-80 rounded-2xl bg-[#141c2e]" />
         <div className="h-80 rounded-2xl bg-[#141c2e]" />
       </div>
+    </div>
+  );
+}
