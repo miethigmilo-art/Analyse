@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { batchGetQuotes, getStockQuote, StockQuote } from '@/lib/api/stocks';
+import { getStockQuote, StockQuote } from '@/lib/api/stocks';
 import { cacheGet, cacheSet } from '@/lib/redis';
 
 // In-memory fallback when Redis isn't available
@@ -63,13 +63,7 @@ function scoreSmall(q: Q) {
 }
 
 async function fetchAll(): Promise<Q[]> {
-  // Try batch first
-  try {
-    const batch = await batchGetQuotes(UNIVERSE);
-    if (batch.length > 10) return batch.filter(q => q.price > 0.01);
-  } catch { /* fall through */ }
-
-  // Fallback: individual calls in parallel
+  // Individual parallel calls — Yahoo Finance v7 batch returns 401 without cookies
   const settled = await Promise.allSettled(UNIVERSE.map(t => getStockQuote(t)));
   return settled
     .filter(r => r.status === 'fulfilled')

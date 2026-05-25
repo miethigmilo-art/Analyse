@@ -6,17 +6,13 @@ const T212_BASE = process.env.TRADING212_MODE === 'demo'
   : 'https://live.trading212.com/api/v0';
 
 async function t212Fetch(endpoint: string) {
-  const clientId = (process.env.TRADING212_CLIENT_ID || '').trim();
-  const secret   = (process.env.TRADING212_SECRET    || '').trim();
-
+  const secret = (process.env.TRADING212_SECRET || '').trim();
   if (!secret) throw new Error('TRADING212_SECRET not configured');
 
-  // T212 uses the secret key directly as the Authorization value
   const headers: Record<string, string> = {
     'Authorization': secret,
     'Content-Type':  'application/json',
   };
-  if (clientId) headers['X-Client-ID'] = clientId;
 
   const res = await axios.get(`${T212_BASE}${endpoint}`, { headers, timeout: 12000 });
   return res.data;
