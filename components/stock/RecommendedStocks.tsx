@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react';
 import StockCard from './StockCard';
 
 const CATEGORIES = [
-  { key: 'trending',    label: 'Trending',        icon: '🔥' },
-  { key: 'aiPicks',     label: 'KI Picks',         icon: '🤖' },
-  { key: 'highGrowth',  label: 'High Growth',      icon: '🚀' },
-  { key: 'undervalued', label: 'Unterbewertet',    icon: '💎' },
-  { key: 'hedgeFunds',  label: 'Hedge Funds',      icon: '🏛️' },
+  { key: 'trending',    label: 'Trending',       icon: '🔥' },
+  { key: 'aiPicks',     label: 'KI Picks',        icon: '🤖' },
+  { key: 'highGrowth',  label: 'High Growth',     icon: '🚀' },
+  { key: 'undervalued', label: 'Unterbewertet',   icon: '💎' },
+  { key: 'hedgeFunds',  label: 'Hedge Funds',     icon: '🏛️' },
+  { key: 'smallCaps',   label: 'Small Caps',      icon: '⚡' },
 ];
 
 interface Quote {
@@ -33,15 +34,11 @@ export default function RecommendedStocks({ onSelect }: { onSelect: (t: string) 
 
   return (
     <div>
-      {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-white">
-          Beste Aktien Picks
-        </h2>
-        <span className="text-xs text-[#475569]">Live-Kurse</span>
+        <h2 className="text-lg font-semibold text-white">Beste Aktien Picks</h2>
+        <span className="text-xs text-[#475569]">~600 Aktien · Live</span>
       </div>
 
-      {/* Category tabs */}
       <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
         {CATEGORIES.map(c => (
           <button
@@ -59,17 +56,22 @@ export default function RecommendedStocks({ onSelect }: { onSelect: (t: string) 
         ))}
       </div>
 
-      {/* Grid */}
+      {cat === 'smallCaps' && (
+        <div className="mb-3 px-3 py-2 rounded-lg bg-yellow-900/20 border border-yellow-500/20 text-xs text-yellow-400">
+          ⚠️ Small Caps & Penny Stocks sind hochriskant und sehr volatil. Nur als Beimischung geeignet.
+        </div>
+      )}
+
       {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[...Array(8)].map((_, i) => (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {[...Array(10)].map((_, i) => (
             <div key={i} className="h-28 rounded-xl bg-[#141c2e] animate-pulse" />
           ))}
         </div>
       ) : current.length === 0 ? (
         <div className="text-center text-[#475569] py-10 text-sm">Keine Daten verfügbar</div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {current.slice(0, 10).map(q => (
             <StockCard key={q.ticker} quote={q} onClick={() => onSelect(q.ticker)} />
           ))}

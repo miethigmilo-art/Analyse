@@ -2,74 +2,90 @@ import { NextResponse } from 'next/server';
 import { batchGetQuotes } from '@/lib/api/stocks';
 import { cacheGet, cacheSet } from '@/lib/redis';
 
-// ── S&P 500 + Russell additions + International ADRs (~550 tickers) ──
+// ── Universe: S&P 500 + Growth + Small Caps + Penny Stocks (~600 tickers) ──
 const UNIVERSE = [
   // Mega Cap / FAANG+
   'AAPL','MSFT','NVDA','GOOGL','GOOG','AMZN','META','TSLA','AVGO','ORCL',
   // Semiconductors
-  'AMD','INTC','QCOM','MRVL','MU','AMAT','LRCX','KLAC','TXN','ADI','MCHP','ON','SWKS','MPWR','WOLF',
+  'AMD','INTC','QCOM','MRVL','MU','AMAT','LRCX','KLAC','TXN','ADI','MCHP','ON','SWKS','MPWR',
   // Cloud & SaaS
   'NOW','CRM','ADBE','INTU','ANSS','CDNS','SNPS','VEEV','HUBS','WDAY','PAYC','PCTY','MANH',
   // High Growth Tech
-  'PLTR','SNOW','CRWD','NET','DDOG','MDB','ZS','PANW','OKTA','TWLO','DOCN','PATH','AI','BBAI',
+  'PLTR','SNOW','CRWD','NET','DDOG','MDB','ZS','PANW','OKTA','TWLO','DOCN','PATH','AI',
   'SHOP','MELI','SE','GRAB','UBER','LYFT','ABNB','DASH','RBLX','COIN','HOOD','SOFI',
   // Internet / Media
-  'NFLX','SPOT','PINS','SNAP','TTD','ROKU','IAC','MTCH','BMBL','YELP',
+  'NFLX','SPOT','PINS','SNAP','TTD','ROKU',
   // Large Cap Tech
   'IBM','HPQ','HPE','DELL','STX','WDC','NTAP','PSTG','ANET','JNPR',
-  // Finance / Banks
+  // Finance
   'BRK-B','JPM','V','MA','BAC','GS','WFC','C','MS','BLK','AXP','SCHW','TFC','USB','PNC','COF',
-  // Fintech
-  'PYPL','SQ','NU','AFRM','UPST','LC','OPEN','MQ',
+  'PYPL','SQ','NU','AFRM','UPST','LC',
   // Insurance
   'CB','AIG','MET','PRU','ALL','TRV','HIG','AON','MMC',
   // Healthcare / Pharma
   'UNH','LLY','JNJ','ABBV','PFE','MRK','TMO','ABT','ISRG','REGN','VRTX','MRNA','BIIB',
   'BMY','AMGN','GILD','ILMN','IQV','IDXX','EW','STE','BDX','BSX','ZBH','RMD','ALGN',
-  // Biotech
-  'CRSP','NTLA','BEAM','EDIT','FATE','RXRX','SEER','ACAD',
+  // Biotech mid cap
+  'CRSP','NTLA','BEAM','EDIT','FATE','RXRX','ACAD','ARWR','IONS','ALNY','BMRN',
   // Consumer Staples
-  'COST','WMT','PG','KO','PEP','PM','MO','CL','GIS','K','CPB','HRL','SJM',
+  'COST','WMT','PG','KO','PEP','PM','MO','CL','GIS','K',
   // Consumer Discretionary
-  'HD','LOW','TJX','ROST','DG','DLTR','NKE','LULU','TPR','RL','PVH','UA',
-  'MCD','SBUX','YUM','DPZ','CMG','DRI','TXRH','EAT',
-  'DIS','CMCSA','WBD','PARA','FOX','LYV',
-  'AMZN','EBAY','ETSY','W','CVNA','AN','KMX',
+  'HD','LOW','TJX','ROST','DG','NKE','LULU','MCD','SBUX','YUM','CMG','DRI',
+  'DIS','CMCSA','LYV',
   // Auto
-  'TSLA','GM','F','RIVN','LCID','STLA','TM','HMC',
+  'GM','F','RIVN','LCID','STLA',
   // Industrials
   'CAT','DE','HON','MMM','EMR','ROK','ITW','PH','GE','ETN','IR','AME','FAST','GWW',
   // Aerospace & Defense
-  'RTX','LMT','NOC','GD','BA','HEI','TDG','HII','KTOS','RKLB',
-  // Transport & Logistics
-  'UPS','FDX','DAL','UAL','AAL','JBLU','LUV','EXPD','XPO','ODFL','SAIA','JBHT',
+  'RTX','LMT','NOC','GD','BA','HEI','TDG','KTOS','RKLB',
+  // Transport
+  'UPS','FDX','DAL','UAL','AAL','EXPD','XPO','ODFL','SAIA',
   // Energy
-  'XOM','CVX','SLB','COP','OXY','EOG','PXD','DVN','MPC','PSX','VLO','HAL','BKR',
-  // Clean Energy
-  'NEE','ENPH','FSLR','SEDG','RUN','NOVA','ARRY','SHLS','BE','PLUG','BLDP',
-  // Utilities
-  'NEE','DUK','SO','D','AEP','EXC','SRE','XEL','ES','WEC',
-  // Real Estate / REITs
-  'AMT','PLD','EQIX','O','SPG','DLR','PSA','EXR','AVB','EQR','INVH','MAA','UDR','ARE',
+  'XOM','CVX','SLB','COP','OXY','EOG','MPC','PSX','VLO','HAL','BKR',
+  // Clean Energy mid cap
+  'NEE','ENPH','FSLR','SEDG','RUN','NOVA','ARRY','BE','PLUG','BLDP',
+  // REITs
+  'AMT','PLD','EQIX','O','SPG','DLR','PSA','EXR','AVB','EQR','ARE',
   // Materials
-  'LIN','APD','SHW','ECL','NEM','FCX','AA','ALB','CF','MOS','NUE','STLD','RS',
+  'LIN','APD','SHW','ECL','NEM','FCX','AA','ALB','CF','MOS','NUE','STLD',
   // Telecom
-  'T','VZ','TMUS','LUMN','DISH',
+  'T','VZ','TMUS',
   // International ADRs
-  'TSM','ASML','SAP','NVO','BABA','JD','PDD','BIDU','NTES','TME',
-  'TM','HMC','SONY','7203.T','SNY','RHHBY','NOVN','NESN',
-  'BP','SHEL','RIO','BHP','BBL','ABB','ABBN',
-  'HSBC','UBS','CS','DB','BCS','ING',
-  'TCEHY','BYDDY','NIO','XPEV','LI','MNSO','TIGR',
-  // ETF proxies for sector tracking
-  // (excluded — no P/E etc.)
-].filter((v, i, a) => a.indexOf(v) === i); // dedupe
+  'TSM','ASML','SAP','NVO','BABA','JD','PDD','BIDU','NTES',
+  'BP','SHEL','RIO','BHP','HSBC','UBS','DB','BCS','ING',
+  'TCEHY','BYDDY','NIO','XPEV','LI','MNSO',
+
+  // ── Small Caps & Penny Stocks ─────────────────────────────────
+  // Meme / High Volatility
+  'GME','AMC','BBBYQ','CLOV','WISH','XELA','BBIG','SPCE',
+  // EV / Clean Energy Penny
+  'MULN','NKLA','GOEV','RIDE','WKHS','FREY','BLNK','CHPT','EVGO','PTRA',
+  'HYLN','AYRO','SOLO','KNDI','IDEX',
+  // Biotech Penny (high risk / high reward)
+  'SNDL','OCGN','HGEN','AGEN','AGIO','ADMA','AKBA','AMPIO','ATNX','AVEO',
+  'BCRX','BNGO','CGEN','CLOV','CRTX','CVAC','CYCN','DARE','EDSA','EWTX',
+  'FREQ','GEVO','HIMS','IMVT','INVA','IOVA','KALA','LGND','LQDA','MGNX',
+  // Tech Penny
+  'BBAI','OPEN','VNET','DIDI','TIGR','GOTU','DOYU','IQ','RLX',
+  'IONQ','QUBT','ARQQ','QMCO','RGTI','SOUN','AEYE','OTRK','MARK',
+  // Mining / Commodities Penny
+  'GORO','GPL','ASM','EXK','PAAS','AG','CDE','HL','MUX','GFI','GOLD',
+  // Cannabis
+  'SNDL','CURLF','CCHW','AYRWF','TCNNF','GTBIF','HRVSF',
+  // SPACs turned companies
+  'HYMC','GREE','BTBT','MARA','RIOT','HUT','BITF','CIFR','CLSK',
+  // Crypto-adjacent
+  'COIN','HOOD','MSTR','SQ',
+  // Small Cap Growth
+  'VUZI','WULF','AEYE','NRDS','BWAY','JBSS','FLNC','STEM','OPAL',
+  'MVST','AMPX','NXRT','ONON','BIRD','MNTK',
+].filter((v, i, a) => a.indexOf(v) === i);
 
 interface Quote {
   ticker: string; price: number; change: number; changePct: number;
-  volume: number; marketCap: number; pe: number;
+  volume: number; marketCap: number; pe: number; avgVolume: number;
   week52High: number; week52Low: number; beta: number;
-  name: string; sector: string; avgVolume: number;
+  name: string; sector: string;
 }
 
 function score52W(q: Quote): number {
@@ -77,7 +93,6 @@ function score52W(q: Quote): number {
   if (!range) return 0.5;
   return Math.max(0, Math.min(1, (q.price - q.week52Low) / range));
 }
-
 function scorePE(pe: number): number {
   if (!pe || pe <= 0) return 0.3;
   if (pe < 8)  return 0.5;
@@ -87,33 +102,41 @@ function scorePE(pe: number): number {
   if (pe < 60) return 0.45;
   return 0.2;
 }
-
 function scoreMomentum(pct: number): number {
   return Math.max(0, Math.min(1, (pct + 5) / 10));
 }
-
 function scoreRelVolume(volume: number, avgVolume: number): number {
   if (!avgVolume || !volume) return 0.5;
-  return Math.min(1, volume / avgVolume);
+  return Math.min(2, volume / avgVolume) / 2; // normalize to 0-1
+}
+function scoreSmallCap(q: Quote): number {
+  // Favors: low price (<$10), high relative volume, positive momentum, high 52W position
+  const priceScore  = q.price > 0 ? Math.max(0, 1 - q.price / 20) : 0; // best under $5
+  const momentum    = scoreMomentum(q.changePct);
+  const relVol      = scoreRelVolume(q.volume, q.avgVolume);
+  const w52         = score52W(q);
+  return priceScore * 0.25 + momentum * 0.35 + relVol * 0.25 + w52 * 0.15;
 }
 
 export async function GET() {
-  const cacheKey = 'recommendations:v3';
+  const cacheKey = 'recommendations:v4';
   const cached = await cacheGet<Record<string, Quote[]>>(cacheKey);
   if (cached) return NextResponse.json(cached);
 
-  // One batch call for all tickers
   const quotes = (await batchGetQuotes(UNIVERSE)) as Quote[];
-  const valid   = quotes.filter(q => q.price > 0 && q.marketCap > 5e8); // min $500M market cap
+  // No market cap minimum — penny stocks allowed
+  const valid = quotes.filter(q => q.price > 0.01);
 
-  const scored = valid.map(q => {
-    const momentum  = scoreMomentum(q.changePct);
-    const pe        = scorePE(q.pe);
-    const w52       = score52W(q);
-    const relVol    = scoreRelVolume(q.volume, q.avgVolume);
-    const absMover  = Math.abs(q.changePct || 0);
-    const sizeFactor = Math.min(1, Math.log10((q.marketCap || 1e9) / 1e9) / 3);
+  const largeCap  = valid.filter(q => q.marketCap >= 1e9);  // $1B+
+  const smallCap  = valid.filter(q => q.marketCap < 1e9);   // under $1B
 
+  const score = (arr: Quote[]) => arr.map(q => {
+    const momentum = scoreMomentum(q.changePct);
+    const pe       = scorePE(q.pe);
+    const w52      = score52W(q);
+    const relVol   = scoreRelVolume(q.volume, q.avgVolume);
+    const absMover = Math.abs(q.changePct || 0);
+    const sizeFactor = Math.min(1, Math.log10(Math.max(1, (q.marketCap || 1e7) / 1e9) + 1) / 1);
     return {
       q,
       trendingScore:  absMover * 0.5 + relVol * 0.5,
@@ -121,21 +144,23 @@ export async function GET() {
       growthScore:    Math.max(0, q.changePct || 0) * 0.5 + w52 * 0.3 + relVol * 0.2,
       valueScore:     pe * 0.5 + momentum * 0.25 + (1 - w52) * 0.25,
       hedgeScore:     sizeFactor * 0.5 + momentum * 0.3 + w52 * 0.2,
+      smallCapScore:  scoreSmallCap(q),
     };
   });
 
-  const top = (key: keyof typeof scored[0], n = 10) =>
-    [...scored]
-      .sort((a, b) => (b[key] as number) - (a[key] as number))
-      .slice(0, n)
-      .map(x => x.q);
+  const scoredAll   = score(valid);
+  const scoredSmall = score(smallCap);
+
+  const top = (arr: typeof scoredAll, key: keyof typeof scoredAll[0], n = 10) =>
+    [...arr].sort((a, b) => (b[key] as number) - (a[key] as number)).slice(0, n).map(x => x.q);
 
   const result = {
-    trending:    top('trendingScore'),
-    aiPicks:     top('aiScore'),
-    highGrowth:  top('growthScore'),
-    undervalued: top('valueScore'),
-    hedgeFunds:  top('hedgeScore'),
+    trending:    top(scoredAll,   'trendingScore'),
+    aiPicks:     top(scoredAll,   'aiScore'),
+    highGrowth:  top(scoredAll,   'growthScore'),
+    undervalued: top(scoredAll,   'valueScore'),
+    hedgeFunds:  top(score(largeCap), 'hedgeScore'),
+    smallCaps:   top(scoredSmall, 'smallCapScore'),
   };
 
   await cacheSet(cacheKey, result, 300);
