@@ -6,13 +6,19 @@ const T212_BASE = process.env.TRADING212_MODE === 'demo'
   : 'https://live.trading212.com/api/v0';
 
 async function t212Fetch(endpoint: string) {
-  const key = (process.env.TRADING212_API_KEY || '').trim();
-  if (!key) throw new Error('TRADING212_API_KEY not set');
+  const clientId = (process.env.TRADING212_CLIENT_ID || '').trim();
+  const secret   = (process.env.TRADING212_SECRET    || '').trim();
 
-  const res = await axios.get(`${T212_BASE}${endpoint}`, {
-    headers: { Authorization: key },
-    timeout: 10000,
-  });
+  if (!secret) throw new Error('TRADING212_SECRET not configured');
+
+  // T212 uses the secret key directly as the Authorization value
+  const headers: Record<string, string> = {
+    'Authorization': secret,
+    'Content-Type':  'application/json',
+  };
+  if (clientId) headers['X-Client-ID'] = clientId;
+
+  const res = await axios.get(`${T212_BASE}${endpoint}`, { headers, timeout: 12000 });
   return res.data;
 }
 
@@ -26,14 +32,13 @@ export async function GET(req: NextRequest) {
         t212Fetch('/equity/account/cash'),
       ]);
 
-      // If positions failed, surface the real error
       if (positions.status === 'rejected') {
         const err = positions.reason;
         const status  = axios.isAxiosError(err) ? (err.response?.status || 502) : 502;
         const message = axios.isAxiosError(err)
           ? JSON.stringify(err.response?.data ?? err.message)
           : String(err);
-        return NextResponse.json({ error: `T212 positions failed (${status}): ${message}` }, { status: 200 });
+        return NextResponse.json({ error: `T212 (${status}): ${message}` });
       }
 
       return NextResponse.json({
@@ -53,6 +58,7 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({ error: 'Unknown type' }, { status: 400 });
+
   } catch (err: unknown) {
     const status  = axios.isAxiosError(err) ? (err.response?.status || 502) : 500;
     const message = axios.isAxiosError(err)
