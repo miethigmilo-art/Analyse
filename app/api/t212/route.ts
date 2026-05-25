@@ -7,10 +7,10 @@ const T212_BASE = process.env.TRADING212_MODE === 'demo'
 
 async function t212Fetch(endpoint: string) {
   const key = (process.env.TRADING212_API_KEY || '').trim();
-  if (!key) throw new Error('TRADING212_API_KEY not configured');
+  if (!key) throw new Error('TRADING212_API_KEY not set');
 
   const res = await axios.get(`${T212_BASE}${endpoint}`, {
-    headers: { Authorization: key, 'X-Api-Key': key },
+    headers: { Authorization: key },
     timeout: 10000,
   });
   return res.data;
@@ -22,13 +22,23 @@ export async function GET(req: NextRequest) {
   try {
     if (type === 'portfolio') {
       const [positions, cash] = await Promise.allSettled([
-        t212Fetch('/equity/positions'),
+        t212Fetch('/equity/portfolio'),
         t212Fetch('/equity/account/cash'),
       ]);
 
+      // If positions failed, surface the real error
+      if (positions.status === 'rejected') {
+        const err = positions.reason;
+        const status  = axios.isAxiosError(err) ? (err.response?.status || 502) : 502;
+        const message = axios.isAxiosError(err)
+          ? JSON.stringify(err.response?.data ?? err.message)
+          : String(err);
+        return NextResponse.json({ error: `T212 positions failed (${status}): ${message}` }, { status: 200 });
+      }
+
       return NextResponse.json({
-        positions: positions.status === 'fulfilled' ? positions.value : [],
-        cash:      cash.status      === 'fulfilled' ? cash.value      : null,
+        positions: positions.value ?? [],
+        cash:      cash.status === 'fulfilled' ? cash.value : null,
       });
     }
 
@@ -44,8 +54,10 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ error: 'Unknown type' }, { status: 400 });
   } catch (err: unknown) {
-    const status = axios.isAxiosError(err) ? (err.response?.status || 502) : 500;
-    const message = axios.isAxiosError(err) ? (err.response?.data || err.message) : String(err);
+    const status  = axios.isAxiosError(err) ? (err.response?.status || 502) : 500;
+    const message = axios.isAxiosError(err)
+      ? JSON.stringify(err.response?.data ?? err.message)
+      : String(err);
     return NextResponse.json({ error: message }, { status });
   }
 }
