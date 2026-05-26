@@ -6,10 +6,15 @@ const BASE = process.env.TRADING212_MODE === "demo"
   : "https://live.trading212.com/api/v0";
 
 async function t212Fetch(endpoint: string) {
-  const secret = (process.env.TRADING212_SECRET || "").trim();
-  if (!secret) throw new Error("TRADING212_SECRET not configured");
+  const apiKey = (process.env.T212_API_KEY || process.env.TRADING212_API_KEY || "").trim();
+  const secret = (process.env.T212_API_SECRET || process.env.TRADING212_SECRET || "").trim();
+
+  if (!apiKey || !secret) throw new Error("T212_API_KEY or T212_API_SECRET not configured");
+
+  const credentials = Buffer.from(`${apiKey}:${secret}`, "utf8").toString("base64");
+
   const res = await axios.get(`${BASE}${endpoint}`, {
-    headers: { Authorization: secret },
+    headers: { Authorization: `Basic ${credentials}` },
     timeout: 12000,
   });
   return res.data;
@@ -31,7 +36,6 @@ export async function GET() {
       return NextResponse.json({ error: `T212 (${status}): ${message}` });
     }
 
-    // Map T212 positions to our Position format
     const raw: Array<Record<string, unknown>> = positions.value ?? [];
     const mapped = raw.map((p) => ({
       ticker:   String(p.ticker || "").replace(/_US_EQ|_EQ|_US/g, ""),
