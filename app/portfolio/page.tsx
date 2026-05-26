@@ -109,7 +109,7 @@ export default function PortfolioPage() {
         if (r.ok) count++;
       }
       alert(count + ' Positionen aus Trading 212 importiert!');
-      loadData();
+      await loadPositions();
     } catch (e) {
       alert('Fehler: ' + String(e));
     }
