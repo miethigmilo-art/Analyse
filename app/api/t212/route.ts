@@ -6,11 +6,18 @@ const T212_BASE = process.env.TRADING212_MODE === 'demo'
   : 'https://live.trading212.com/api/v0';
 
 async function t212Fetch(endpoint: string) {
+  const apiKey = (process.env.TRADING212_API_KEY || '').trim();
   const secret = (process.env.TRADING212_SECRET || '').trim();
+
   if (!secret) throw new Error('TRADING212_SECRET not configured');
 
+  // Use Basic auth if both key and secret are present, otherwise raw secret as token
+  const authHeader = apiKey
+    ? 'Basic ' + Buffer.from(`${apiKey}:${secret}`).toString('base64')
+    : secret;
+
   const headers: Record<string, string> = {
-    'Authorization': secret,
+    'Authorization': authHeader,
     'Content-Type':  'application/json',
   };
 
