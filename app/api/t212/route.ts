@@ -68,3 +68,20 @@ export async function GET() {
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
+
+export async function POST() {
+  // Debug: return raw T212 response
+  try {
+    const apiKey = (process.env.T212_API_KEY || process.env.TRADING212_API_KEY || "").trim();
+    const secret = (process.env.T212_API_SECRET || process.env.TRADING212_SECRET || "").trim();
+    const credentials = Buffer.from(`${apiKey}:${secret}`, "utf8").toString("base64");
+    const res = await axios.get("https://live.trading212.com/api/v0/equity/portfolio", {
+      headers: { Authorization: `Basic ${credentials}` },
+      timeout: 12000,
+    });
+    return NextResponse.json({ raw: res.data, type: typeof res.data, isArray: Array.isArray(res.data) });
+  } catch (err: unknown) {
+    const msg = axios.isAxiosError(err) ? JSON.stringify(err.response?.data ?? err.message) : String(err);
+    return NextResponse.json({ error: msg });
+  }
+}
