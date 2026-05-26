@@ -5,7 +5,14 @@ const T212_BASE = process.env.TRADING212_MODE === 'demo'
   ? 'https://demo.trading212.com/api/v0'
   : 'https://live.trading212.com/api/v0';
 
+// In-memory cache: 60 seconds TTL
+const cache = new Map<string, { data: unknown; at: number }>();
+const CACHE_TTL = 60_000;
+
 async function t212Fetch(endpoint: string) {
+  const cached = cache.get(endpoint);
+  if (cached && Date.now() - cached.at < CACHE_TTL) return cached.data;
+
   const apiKey = (process.env.T212_API_KEY || process.env.TRADING212_API_KEY || '').trim();
   const secret = (process.env.T212_API_SECRET || process.env.TRADING212_SECRET || '').trim();
 
@@ -13,12 +20,12 @@ async function t212Fetch(endpoint: string) {
 
   const credentials = Buffer.from(`${apiKey}:${secret}`, 'utf8').toString('base64');
 
-  const headers: Record<string, string> = {
-    'Authorization': `Basic ${credentials}`,
-    'Content-Type':  'application/json',
-  };
+  const res = await axios.get(`${T212_BASE}${endpoint}`, {
+    headers: { Authorization: `Basic ${credentials}` },
+    timeout: 12000,
+  });
 
-  const res = await axios.get(`${T212_BASE}${endpoint}`, { headers, timeout: 12000 });
+  cache.set(endpoint, { data: res.data, at: Date.now() });
   return res.data;
 }
 
