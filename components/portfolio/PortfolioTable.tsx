@@ -20,6 +20,7 @@ interface Quote {
 }
 
 interface Props {
+  onDeleteAll?: () => void;
   positions: Position[];
   quotes: Record<string, Quote>;
   totalValue: number;
@@ -54,7 +55,7 @@ const formatCurrency = (val: number, compact = false) => {
 };
 
 export default function PortfolioTable({
-  positions, quotes, totalValue, isDemo = false, onDelete, onAdd, onImport, onT212Import,
+  positions, quotes, totalValue, isDemo = false, onDelete, onAdd, onImport, onT212Import, onDeleteAll,
 }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("value");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -116,6 +117,15 @@ export default function PortfolioTable({
           <p style={{ color: "#8892b0", fontSize: "0.875rem" }}>{positions.length} positions tracked</p>
         </div>
         <div style={{ display: "flex", gap: "0.75rem" }}>
+          {onDeleteAll && (
+            <button onClick={() => { if(confirm("Alle Positionen löschen?")) onDeleteAll(); }} style={{
+              padding: "0.5rem 1rem", borderRadius: "0.5rem", border: "none", cursor: "pointer",
+              background: "rgba(239,68,68,0.15)", color: "#ef4444",
+              fontSize: "0.85rem", fontWeight: "600", display: "flex", alignItems: "center", gap: "0.4rem",
+            }}>
+              🗑️ Alle löschen
+            </button>
+          )}
           {onT212Import && (
             <button onClick={onT212Import} style={{
               padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer',

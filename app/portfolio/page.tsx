@@ -86,6 +86,12 @@ export default function PortfolioPage() {
     await loadPositions();
   }
 
+  async function handleDeleteAll() {
+    if (!confirm("Wirklich alle Positionen löschen?")) return;
+    await fetch("/api/portfolio", { method: "DELETE" });
+    await loadPositions();
+  }
+
   async function handleDelete(id: string) {
     if (!confirm("Delete this position?")) return;
     await fetch(`/api/portfolio?id=${id}`, { method: "DELETE" });
@@ -180,6 +186,7 @@ export default function PortfolioPage() {
             onAdd={() => setShowAdd(true)}
             onImport={handleImport}
             onT212Import={handleT212Import}
+            onDeleteAll={handleDeleteAll}
           />
         </main>
       </div>

@@ -47,7 +47,10 @@ export async function DELETE(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
-    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+    if (!id) {
+      await prisma.position.deleteMany({});
+      return NextResponse.json({ success: true, deleted: "all" });
+    }
     await prisma.position.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch {
@@ -59,7 +62,10 @@ export async function PATCH(req: Request) {
   try {
     const body = await req.json();
     const { id, ...data } = body;
-    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+    if (!id) {
+      await prisma.position.deleteMany({});
+      return NextResponse.json({ success: true, deleted: "all" });
+    }
     const position = await prisma.position.update({ where: { id }, data });
     return NextResponse.json({ position });
   } catch {
