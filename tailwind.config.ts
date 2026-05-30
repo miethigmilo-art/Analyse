@@ -9,6 +9,20 @@ const config: Config = {
   darkMode: 'class',
   theme: {
     extend: {
+      keyframes: {
+        'helix-fade-down': {
+          from: { opacity: '0', transform: 'translateY(-20px)' },
+          to:   { opacity: '1', transform: 'translateY(0)' },
+        },
+        'helix-fade-up': {
+          from: { opacity: '0', transform: 'translateY(30px)' },
+          to:   { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        'helix-fade-down': 'helix-fade-down 0.8s ease-out forwards',
+        'helix-fade-up':   'helix-fade-up 0.8s ease-out forwards',
+      },
       colors: {
         bg: {
           primary:   '#0a0e1a',
